@@ -1,0 +1,1136 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <title>三语悬浮翻译机（APP版）</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 微软雅黑, sans-serif; }
+        body { background: #f5f5f5; }
+        .floating-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #1976d2;
+            color: white;
+            font-size: 24px;
+            border: none;
+            box-shadow: 0 4px 12px rgba(25,118,210,0.4);
+            cursor: pointer;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            touch-action: manipulation;
+            user-select: none;
+            overflow: hidden;
+            pointer-events: auto;
+            outline: none;
+            padding: 10px;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .floating-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(25,118,210,0.5);
+        }
+        .floating-btn.active {
+            background: #f44336;
+        }
+        .floating-btn.edge-mode {
+            width: 12px;
+            height: 50px;
+            border-radius: 4px;
+            transform: none;
+            box-shadow: 0 2px 8px rgba(25,118,210,0.3);
+            clip-path: none;
+            padding: 0;
+        }
+        .floating-btn.edge-mode.right {
+            right: 0 !important;
+            transform: none !important;
+        }
+        .floating-btn.edge-mode.left {
+            left: 0 !important;
+            transform: none !important;
+        }
+        .floating-btn.edge-mode.top {
+            top: 0 !important;
+            transform: none !important;
+            width: 50px;
+            height: 12px;
+        }
+        .floating-btn.edge-mode.bottom {
+            bottom: 0 !important;
+            transform: none !important;
+            width: 50px;
+            height: 12px;
+        }
+        .floating-btn.edge-mode:hover {
+            width: 16px;
+            height: 56px;
+            box-shadow: 0 4px 12px rgba(25,118,210,0.5);
+        }
+        .floating-btn.edge-mode.top:hover,
+        .floating-btn.edge-mode.bottom:hover {
+            width: 56px;
+            height: 16px;
+        }
+        .floating-modal {
+            position: fixed;
+            bottom: 100px;
+            right: 15px;
+            left: 15px;
+            width: auto;
+            max-width: 400px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+            z-index: 9998;
+            padding: 20px;
+            padding-bottom: 70px;
+            display: none;
+            flex-direction: column;
+            gap: 15px;
+            animation: popUp 0.3s ease-out;
+            max-height: 80vh;
+            overflow-y: auto;
+            margin: 0 auto;
+        }
+        @keyframes popUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .floating-modal.active {
+            display: flex;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            background: white;
+            padding-bottom: 10px;
+            z-index: 10;
+        }
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+        .close-btn {
+            display: flex;
+            background: transparent;
+            border: none;
+            font-size: 20px;
+            color: #666;
+            cursor: pointer;
+            width: 30px;
+            height: 30px;
+            align-items: center;
+            justify-content: center;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .close-btn:hover {
+            color: #f44336;
+        }
+        .settings-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .translate-dir {
+            flex: 1;
+            min-width: 220px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .dir-btn {
+            flex: 1;
+            min-width: 70px;
+            padding: 6px 8px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: #f9f9f9;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .dir-btn.active {
+            background: #1976d2;
+            color: white;
+            border-color: #1976d2;
+        }
+        .setting-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            background: #e3f2fd;
+            color: #1976d2;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .flag-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #333;
+        }
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 20px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 14px;
+            width: 14px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #1976d2;
+        }
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+        .input-container {
+            position: relative;
+        }
+        #floatingInput {
+            width: 100%;
+            height: 100px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            resize: vertical;
+            font-size: 14px;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+        .btn-group button {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            border: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        #clearInputBtn {
+            background: #f5f5f5;
+            color: #333;
+            border: 1px solid #ddd;
+        }
+        #clearInputBtn:hover {
+            background: #eee;
+        }
+        #translateBtn {
+            background: #1976d2;
+            color: white;
+        }
+        #translateBtn:hover {
+            opacity: 0.9;
+        }
+        .result-area {
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            flex: 1;
+        }
+        .result-item {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding: 12px;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+        .result-label {
+            font-size: 13px;
+            color: #666;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .copy-btn {
+            background: #e3f2fd;
+            color: #1976d2;
+            border: none;
+            border-radius: 4px;
+            padding: 3px 10px;
+            font-size: 11px;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .copy-btn:hover {
+            background: #bbdefb;
+        }
+        .result-text {
+            font-size: 16px;
+            color: #333;
+            line-height: 1.6;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+        }
+        .play-btns {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+        .play-btn {
+            padding: 5px 10px;
+            background: #f3f4f6;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .play-btn.en { color: #1976d2; }
+        .play-btn.zh { color: #4caf50; }
+        .play-btn.es { color: #e91e63; }
+        .speed-btn {
+            padding: 5px 8px;
+            background: #e9ecef;
+            border: none;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .speed-btn.slow { color: #6c757d; }
+        .speed-btn.fast { color: #dc3545; }
+        .loop-btn {
+            padding: 5px 8px;
+            background: #f0f8fb;
+            border: none;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .loop-btn.active {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        .bottom-btn-group {
+            display: flex;
+            gap: 10px;
+            padding: 10px 0;
+            background: white;
+            border-radius: 0 0 12px 12px;
+            position: fixed;
+            bottom: 100px;
+            left: 15px;
+            right: 15px;
+            width: auto;
+            max-width: 400px;
+            z-index: 9999;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+            padding-left: 20px;
+            padding-right: 20px;
+            margin: 0 auto;
+        }
+        .back-to-bottom-btn {
+            flex: 1;
+        }
+        .back-to-bottom-btn button {
+            width: 100%;
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            -webkit-tap-highlight-color: transparent;
+        }
+        .back-to-bottom-btn button:hover {
+            background: #eee;
+            transform: scale(1.03);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .back-to-top-btn {
+            flex: 1;
+        }
+        .back-to-top-btn button {
+            width: 100%;
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            -webkit-tap-highlight-color: transparent;
+        }
+        .back-to-top-btn button:hover {
+            background: #eee;
+            transform: scale(1.03);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .copy-all-btn {
+            padding: 8px 12px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            flex: 1;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(37, 99, 235, 0.2);
+            -webkit-tap-highlight-color: transparent;
+        }
+        .copy-all-btn:hover {
+            background: #1d4ed8;
+            transform: scale(1.03);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+        .api-tip {
+            font-size: 12px;
+            color: #ff5722;
+            text-align: center;
+            margin-top: 5px;
+        }
+        .toast {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 12px 24px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 99999;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .toast.show {
+            opacity: 1;
+        }
+        .lang-flag {
+            margin-right: 6px;
+        }
+        .clipboard-tip {
+            position: absolute;
+            top: -25px;
+            left: 0;
+            font-size: 12px;
+            color: #4caf50;
+            background: #f1f8e9;
+            padding: 3px 8px;
+            border-radius: 4px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <button class="floating-btn" id="floatingBtn">🌐</button>
+    <div class="floating-modal" id="floatingModal">
+        <div class="modal-header">
+            <div class="modal-title">三语悬浮翻译机</div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <button class="setting-btn" id="floatSettingBtn">⚙️ 悬浮球设置</button>
+                <button class="close-btn" id="closeBtn">×</button>
+            </div>
+        </div>
+        <div class="settings-row">
+            <div class="translate-dir">
+                <button class="dir-btn active" data-dir="auto">自动识别→三语</button>
+                <button class="dir-btn" data-dir="en2zh">英文→中+西</button>
+                <button class="dir-btn" data-dir="zh2en">中文→英+西</button>
+                <button class="dir-btn" data-dir="es2zh">西语→中+英</button>
+            </div>
+            <button class="setting-btn" id="saveSettingBtn">保存设置</button>
+            <div class="flag-toggle">
+                显示国旗前缀
+                <label class="toggle-switch">
+                    <input type="checkbox" id="flagToggle" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+        <div class="input-container">
+            <div class="clipboard-tip" id="clipboardTip">已识别剪贴板内容，点击翻译即可使用</div>
+            <textarea id="floatingInput" placeholder="自动识别语言，输入/粘贴内容即可翻译"></textarea>
+        </div>
+        <div class="btn-group">
+            <button id="clearInputBtn">清空</button>
+            <button id="translateBtn">立即翻译</button>
+        </div>
+        <div class="result-area" id="resultArea">
+            <div class="result-text" style="text-align: center; color: #999;">翻译结果将显示在这里</div>
+        </div>
+    </div>
+    <div class="bottom-btn-group" id="bottomBtnGroup" style="display: none;">
+        <div class="back-to-bottom-btn">
+            <button id="backToBottomBtn">回到最底部</button>
+        </div>
+        <div class="back-to-top-btn">
+            <button id="backToTopBtn">回到输入框</button>
+        </div>
+        <button class="copy-all-btn" id="copyAllBtn">
+            📋 复制三语全文
+        </button>
+    </div>
+    <div class="toast" id="toast">操作成功！</div>
+    <script>
+        const defaultSettings = {
+            translateDir: 'auto',
+            showFlagPrefix: true,
+            floatBtnPos: { bottom: 30, right: 30 },
+            isEdgeMode: false,
+            edgePosition: 'right',
+            lastMode: 'ball',
+            edgePos记忆: {
+                right: { bottom: '30px', right: '0' },
+                left: { top: '30px', left: '0' },
+                top: { top: '0', left: '30px' },
+                bottom: { bottom: '0', left: '30px' }
+            },
+            customSpeed: { slow: 0.7, fast: 1.5 },
+            isLoopPlay: false
+        };
+        let settings = JSON.parse(localStorage.getItem('translateSettings')) || defaultSettings;
+        let translateDir = settings.translateDir;
+        let showFlagPrefix = settings.showFlagPrefix;
+        let floatBtnPos = settings.floatBtnPos;
+        let isEdgeMode = settings.isEdgeMode;
+        let edgePosition = settings.edgePosition;
+        let lastMode = settings.lastMode;
+        let edgePos记忆 = settings.edgePos记忆;
+        let customSpeed = settings.customSpeed;
+        let isLoopPlay = settings.isLoopPlay;
+        let currentAudio = null;
+        let translateResult = { lang1: '', lang2: '', lang3: '', text1: '', text2: '', text3: '', flag1: '', flag2: '', flag3: '' };
+        let clipboardText = '';
+        let startX, startY, startLeft, startTop;
+        
+        const backToBottomBtn = document.getElementById('backToBottomBtn');
+        const bottomBtnGroup = document.getElementById('bottomBtnGroup');
+        const floatSettingBtn = document.getElementById('floatSettingBtn');
+        const closeBtn = document.getElementById('closeBtn');
+        const floatingBtn = document.getElementById('floatingBtn');
+        const floatingModal = document.getElementById('floatingModal');
+        const clearInputBtn = document.getElementById('clearInputBtn');
+        const backToTopBtn = document.getElementById('backToTopBtn');
+        const copyAllBtn = document.getElementById('copyAllBtn');
+        const saveSettingBtn = document.getElementById('saveSettingBtn');
+        const flagToggle = document.getElementById('flagToggle');
+        const dirBtns = document.querySelectorAll('.dir-btn');
+        const floatingInput = document.getElementById('floatingInput');
+        const translateBtn = document.getElementById('translateBtn');
+        const resultArea = document.getElementById('resultArea');
+        const toast = document.getElementById('toast');
+        const clipboardTip = document.getElementById('clipboardTip');
+        
+        const langFlagMap = {
+            en: '🇬🇧',
+            zh: '🇨🇳',
+            es: '🇪🇸'
+        };
+        
+        function init() {
+            setFloatBtnMode();
+            setFloatBtnPosition();
+            flagToggle.checked = showFlagPrefix;
+            dirBtns.forEach(btn => btn.dataset.dir === translateDir && btn.classList.add('active'));
+            updateInputPlaceholder();
+            readClipboard();
+            bindClickToggleModal();
+            bindFloatSettingBtn();
+            bindCloseBtn();
+            bindFloatBtnDrag();
+            bindCopyAllBtn();
+            bindBackToBottomBtn();
+            initSpeedButtons();
+            fixInputClickClose();
+        }
+        
+        function bindBackToBottomBtn() {
+            backToBottomBtn.addEventListener('click', () => {
+                floatingModal.scrollTo({ 
+                    top: floatingModal.scrollHeight, 
+                    behavior: 'smooth' 
+                });
+            });
+        }
+        
+        function initSpeedButtons() {
+            document.querySelectorAll('.speed-btn').forEach(btn => {
+                const speedType = btn.classList.contains('slow') ? 'slow' : 'fast';
+                const savedSpeed = customSpeed[speedType];
+                btn.textContent = `${speedType === 'slow' ? '🐢' : '⚡'} ${savedSpeed}x`;
+                btn.dataset.speed = savedSpeed;
+            });
+        }
+        
+        function fixInputClickClose() {
+            floatingInput.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+            floatingInput.addEventListener('mousedown', (e) => {
+                e.stopPropagation();
+            });
+            floatingInput.addEventListener('touchstart', (e) => {
+                e.stopPropagation();
+            });
+        }
+        
+        function bindCloseBtn() {
+            closeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                floatingModal.classList.remove('active');
+                floatingBtn.classList.remove('active');
+                bottomBtnGroup.style.display = 'none';
+                stopCurrentAudio();
+                clipboardTip.style.display = 'none';
+                setFloatBtnMode();
+                setFloatBtnPosition();
+            });
+        }
+        
+        function bindFloatSettingBtn() {
+            floatSettingBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                isEdgeMode = !isEdgeMode;
+                lastMode = isEdgeMode ? 'edge' : 'ball';
+                setFloatBtnMode();
+                setFloatBtnPosition();
+                settings.isEdgeMode = isEdgeMode;
+                settings.lastMode = lastMode;
+                localStorage.setItem('translateSettings', JSON.stringify(settings));
+                showToast(`已切换为${isEdgeMode ? '长条' : '圆球'}模式，可自由拖拽`);
+            });
+        }
+        
+        function setFloatBtnMode() {
+            floatingBtn.classList.remove('edge-mode', 'right', 'left', 'top', 'bottom');
+            if (isEdgeMode) {
+                floatingBtn.classList.add('edge-mode', edgePosition);
+                floatingBtn.innerHTML = '';
+            } else {
+                floatingBtn.innerHTML = '🌐';
+            }
+        }
+        
+        function setFloatBtnPosition() {
+            if (isEdgeMode) {
+                const pos = edgePos记忆[edgePosition];
+                floatingBtn.style = '';
+                for (const key in pos) {
+                    floatingBtn.style[key] = pos[key];
+                }
+                floatingBtn.classList.add('edge-mode', edgePosition);
+            } else {
+                const btnWidth = floatingBtn.offsetWidth;
+                const btnHeight = floatingBtn.offsetHeight;
+                floatBtnPos.right = Math.max(0, Math.min(floatBtnPos.right, window.innerWidth - btnWidth));
+                floatBtnPos.bottom = Math.max(0, Math.min(floatBtnPos.bottom, window.innerHeight - btnHeight));
+                floatingBtn.style.bottom = `${floatBtnPos.bottom}px`;
+                floatingBtn.style.right = `${floatBtnPos.right}px`;
+                floatingBtn.style.top = 'auto';
+                floatingBtn.style.left = 'auto';
+            }
+        }
+        
+        function bindFloatBtnDrag() {
+            function handleStart(e) {
+                e.preventDefault();
+                const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+                const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+                const rect = floatingBtn.getBoundingClientRect();
+                startX = clientX;
+                startY = clientY;
+                startLeft = rect.left;
+                startTop = rect.top;
+                floatingBtn.style.cursor = 'grabbing';
+                floatingBtn.style.transition = 'none';
+            }
+            
+            function handleMove(e) {
+                if (startX === undefined || startY === undefined) return;
+                const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+                const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+                const offsetX = clientX - startX;
+                const offsetY = clientY - startY;
+                let newLeft = startLeft + offsetX;
+                let newTop = startTop + offsetY;
+                const btnWidth = floatingBtn.offsetWidth;
+                const btnHeight = floatingBtn.offsetHeight;
+                
+                newLeft = Math.max(0, Math.min(newLeft, window.innerWidth - btnWidth));
+                newTop = Math.max(0, Math.min(newTop, window.innerHeight - btnHeight));
+                
+                floatingBtn.style.left = `${newLeft}px`;
+                floatingBtn.style.top = `${newTop}px`;
+                floatingBtn.style.bottom = 'auto';
+                floatingBtn.style.right = 'auto';
+                
+                if (isEdgeMode) {
+                    edgePos记忆[edgePosition] = {
+                        left: `${newLeft}px`,
+                        top: `${newTop}px`
+                    };
+                } else {
+                    floatBtnPos = {
+                        bottom: window.innerHeight - (newTop + btnHeight),
+                        right: window.innerWidth - (newLeft + btnWidth)
+                    };
+                }
+            }
+            
+            function handleEnd() {
+                if (startX === undefined || startY === undefined) return;
+                floatingBtn.style.cursor = 'pointer';
+                floatingBtn.style.transition = 'all 0.3s ease';
+                settings.floatBtnPos = floatBtnPos;
+                settings.edgePos记忆 = edgePos记忆;
+                localStorage.setItem('translateSettings', JSON.stringify(settings));
+                startX = undefined;
+                startY = undefined;
+                startLeft = undefined;
+                startTop = undefined;
+            }
+            
+            floatingBtn.addEventListener('mousedown', handleStart);
+            document.addEventListener('mousemove', handleMove);
+            document.addEventListener('mouseup', handleEnd);
+            floatingBtn.addEventListener('touchstart', handleStart, { passive: false });
+            document.addEventListener('touchmove', handleMove, { passive: false });
+            document.addEventListener('touchend', handleEnd);
+        }
+        
+        function updateInputPlaceholder() {
+            const placeholderMap = {
+                'auto': '自动识别语言，输入/粘贴内容即可翻译',
+                'en2zh': '请输入英文内容...',
+                'zh2en': '请输入中文内容...',
+                'es2zh': '请输入西班牙语内容...'
+            };
+            floatingInput.placeholder = placeholderMap[translateDir];
+        }
+        
+        async function readClipboard() {
+            try {
+                if (navigator.clipboard) {
+                    const text = await navigator.clipboard.readText();
+                    if (text.trim() && text.length < 500) clipboardText = text.trim();
+                }
+            } catch (error) {
+                console.error('读取剪贴板失败：', error);
+            }
+        }
+        
+        function detectLanguage(text) {
+            const zhRegex = /[\u4e00-\u9fa5]/;
+            if (zhRegex.test(text)) return 'zh';
+            const esRegex = /ñ|á|é|í|ó|ú|ü|El|La|Los|Las|de|en|que|un|una|para|con/i;
+            if (esRegex.test(text)) return 'es';
+            return 'en';
+        }
+        
+        function bindClickToggleModal() {
+            floatingModal.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+            
+            floatingBtn.addEventListener('click', toggleModal);
+            floatingBtn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                toggleModal();
+            });
+            
+            function toggleModal() {
+                const isModalActive = floatingModal.classList.contains('active');
+                if (isModalActive) {
+                    floatingModal.classList.remove('active');
+                    floatingBtn.classList.remove('active');
+                    bottomBtnGroup.style.display = 'none';
+                    stopCurrentAudio();
+                    clipboardTip.style.display = 'none';
+                    setFloatBtnMode();
+                    setFloatBtnPosition();
+                } else {
+                    floatingModal.classList.add('active');
+                    floatingBtn.classList.add('active');
+                    bottomBtnGroup.style.display = 'flex';
+                    copyAllBtn.style.display = 'none';
+                    floatingBtn.classList.remove('edge-mode', 'right', 'left', 'top', 'bottom');
+                    floatingBtn.innerHTML = '🌐';
+                    floatingBtn.style.bottom = '30px';
+                    floatingBtn.style.right = '30px';
+                    floatingBtn.style.top = 'auto';
+                    floatingBtn.style.left = 'auto';
+                    floatingInput.focus();
+                    if (clipboardText && !floatingInput.value.trim()) {
+                        clipboardTip.style.display = 'inline-block';
+                    }
+                }
+            }
+        }
+        
+        function bindCopyAllBtn() {
+            copyAllBtn.addEventListener('click', () => {
+                const { text1, text2, text3, flag1, flag2, flag3 } = translateResult;
+                const fullText = `${showFlagPrefix ? flag1 + ' ' : ''}${text1 || '无内容'}\n${showFlagPrefix ? flag2 + ' ' : ''}${text2 || '无内容'}\n${showFlagPrefix ? flag3 + ' ' : ''}${text3 || '无内容'}`;
+                
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(fullText).then(() => {
+                        showToast('三语全文复制成功！');
+                    }).catch(err => {
+                        console.error('剪贴板复制失败：', err);
+                        fallbackCopyText(fullText);
+                    });
+                } else {
+                    fallbackCopyText(fullText);
+                }
+            });
+        }
+        
+        function fallbackCopyText(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showToast('三语全文复制成功！');
+            } catch (err) {
+                console.error('降级复制失败：', err);
+                showToast('复制失败，请手动复制');
+            } finally {
+                document.body.removeChild(textarea);
+            }
+        }
+        
+        clearInputBtn.addEventListener('click', () => {
+            floatingInput.value = '';
+            floatingInput.focus();
+            clipboardTip.style.display = 'none';
+        });
+        
+        backToTopBtn.addEventListener('click', () => {
+            floatingModal.scrollTo({ top: 0, behavior: 'smooth' });
+            setTimeout(() => floatingInput.focus(), 300);
+        });
+        
+        dirBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                dirBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                translateDir = btn.dataset.dir;
+                updateInputPlaceholder();
+            });
+        });
+        
+        flagToggle.addEventListener('change', () => {
+            showFlagPrefix = flagToggle.checked;
+            translateResult.text1 && renderResult(translateResult);
+        });
+        
+        saveSettingBtn.addEventListener('click', () => {
+            settings = {
+                translateDir, 
+                showFlagPrefix, 
+                floatBtnPos,
+                isEdgeMode, 
+                edgePosition, 
+                lastMode,
+                edgePos记忆: edgePos记忆,
+                customSpeed: customSpeed,
+                isLoopPlay: isLoopPlay
+            };
+            localStorage.setItem('translateSettings', JSON.stringify(settings));
+            showToast('所有设置（含倍速/循环）已保存！');
+        });
+        
+        translateBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            let inputText = floatingInput.value.trim() || clipboardText;
+            if (!inputText) {
+                resultArea.innerHTML = '<div class="result-text" style="text-align: center; color: #999;">请输入需要翻译的内容</div>';
+                copyAllBtn.style.display = 'none';
+                return;
+            }
+            try {
+                resultArea.innerHTML = '<div class="result-text" style="text-align: center; color: #999;">翻译中...</div>';
+                copyAllBtn.style.display = 'none';
+                let fromLang = translateDir === 'auto' ? detectLanguage(inputText) : translateDir.split('2')[0];
+                let [lang1, lang2, lang3, text1, text2, text3, flag1, flag2, flag3] = ['', '', '', '', '', '', '', '', ''];
+                
+                if (fromLang === 'en') {
+                    lang1 = '英文（原文）'; text1 = inputText; flag1 = langFlagMap.en;
+                    lang2 = '中文翻译'; text2 = await translateText(inputText, 'en', 'zh-CN'); flag2 = langFlagMap.zh;
+                    lang3 = '西班牙语翻译'; text3 = await translateText(inputText, 'en', 'es-MX'); flag3 = langFlagMap.es;
+                } else if (fromLang === 'zh') {
+                    lang1 = '中文（原文）'; text1 = inputText; flag1 = langFlagMap.zh;
+                    lang2 = '英文翻译'; text2 = await translateText(inputText, 'zh-CN', 'en'); flag2 = langFlagMap.en;
+                    lang3 = '西班牙语翻译'; text3 = await translateText(inputText, 'zh-CN', 'es-MX'); flag3 = langFlagMap.es;
+                } else if (fromLang === 'es') {
+                    lang1 = '西班牙语（原文）'; text1 = inputText; flag1 = langFlagMap.es;
+                    lang2 = '中文翻译'; text2 = await translateText(inputText, 'es', 'zh-CN'); flag2 = langFlagMap.zh;
+                    lang3 = '英文翻译'; text3 = await translateText(inputText, 'es', 'en'); flag3 = langFlagMap.en;
+                }
+                
+                translateResult = { lang1, lang2, lang3, text1, text2, text3, flag1, flag2, flag3 };
+                renderResult(translateResult);
+                copyAllBtn.style.display = 'flex';
+                floatingInput.value = '';
+                floatingModal.scrollTo({ top: document.querySelector('.result-area').offsetTop - 100, behavior: 'smooth' });
+            } catch (error) {
+                resultArea.innerHTML = '<div class="result-text" style="text-align: center; color: #f44336;">翻译失败，请检查网络</div>';
+                copyAllBtn.style.display = 'none';
+                console.error(error);
+            }
+        });
+        
+        function renderResult(result) {
+            const { lang1, lang2, lang3, text1, text2, text3, flag1, flag2, flag3 } = result;
+            const getResultText = (flag, text) => showFlagPrefix ? `${flag} ${text || '翻译失败'}` : text || '翻译失败';
+            
+            const slowSpeed = customSpeed.slow;
+            const fastSpeed = customSpeed.fast;
+            const loopBtnClass = isLoopPlay ? 'active' : '';
+            const loopBtnText = isLoopPlay ? '🔁 循环' : '▶️ 单次';
+            
+            resultArea.innerHTML = `
+                <div class="result-item">
+                    <div class="result-label">${lang1}<button class="copy-btn" data-text="${text1}">复制</button></div>
+                    <div class="result-text">${getResultText(flag1, text1)}</div>
+                    <div class="play-btns">
+                        <button class="play-btn ${getLangClass(lang1)}" data-text="${text1}" data-lang="${getLangCode(lang1)}" data-speed="1">🔊 正常</button>
+                        <button class="speed-btn slow" data-text="${text1}" data-lang="${getLangCode(lang1)}" data-speed="${slowSpeed}">🐢 ${slowSpeed}x</button>
+                        <button class="speed-btn fast" data-text="${text1}" data-lang="${getLangCode(lang1)}" data-speed="${fastSpeed}">⚡ ${fastSpeed}x</button>
+                        <button class="loop-btn ${loopBtnClass}" data-text="${text1}" data-lang="${getLangCode(lang1)}">${loopBtnText}</button>
+                    </div>
+                </div>
+                <div class="result-item">
+                    <div class="result-label">${lang2}<button class="copy-btn" data-text="${text2}">复制</button></div>
+                    <div class="result-text">${getResultText(flag2, text2)}</div>
+                    <div class="play-btns">
+                        <button class="play-btn ${getLangClass(lang2)}" data-text="${text2}" data-lang="${getLangCode(lang2)}" data-speed="1">🔊 正常</button>
+                        <button class="speed-btn slow" data-text="${text2}" data-lang="${getLangCode(lang2)}" data-speed="${slowSpeed}">🐢 ${slowSpeed}x</button>
+                        <button class="speed-btn fast" data-text="${text2}" data-lang="${getLangCode(lang2)}" data-speed="${fastSpeed}">⚡ ${fastSpeed}x</button>
+                        <button class="loop-btn ${loopBtnClass}" data-text="${text2}" data-lang="${getLangCode(lang2)}">${loopBtnText}</button>
+                    </div>
+                </div>
+                <div class="result-item">
+                    <div class="result-label">${lang3}<button class="copy-btn" data-text="${text3}">复制</button></div>
+                    <div class="result-text">${getResultText(flag3, text3)}</div>
+                    <div class="play-btns">
+                        <button class="play-btn ${getLangClass(lang3)}" data-text="${text3}" data-lang="${getLangCode(lang3)}" data-speed="1">🔊 正常</button>
+                        <button class="speed-btn slow" data-text="${text3}" data-lang="${getLangCode(lang3)}" data-speed="${slowSpeed}">🐢 ${slowSpeed}x</button>
+                        <button class="speed-btn fast" data-text="${text3}" data-lang="${getLangCode(lang3)}" data-speed="${fastSpeed}">⚡ ${fastSpeed}x</button>
+                        <button class="loop-btn ${loopBtnClass}" data-text="${text3}" data-lang="${getLangCode(lang3)}">${loopBtnText}</button>
+                    </div>
+                </div>
+            `;
+            
+            document.querySelectorAll('.copy-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => copyToClipboard(e.target.dataset.text));
+            });
+            
+            document.querySelectorAll('.play-btn, .speed-btn, .loop-btn').forEach(btn => {
+                if (btn.classList.contains('play-btn') || btn.classList.contains('speed-btn')) {
+                    btn.addEventListener('click', async (e) => {
+                        const text = e.target.dataset.text;
+                        const lang = e.target.dataset.lang;
+                        const speed = parseFloat(e.target.dataset.speed);
+                        if (text && text !== '翻译失败') {
+                            await playAudio(text, lang, speed, isLoopPlay);
+                        }
+                    });
+                }
+                
+                if (btn.classList.contains('speed-btn')) {
+                    let pressTimer = null;
+                    btn.addEventListener('mousedown', () => {
+                        pressTimer = setTimeout(() => {
+                            const speedType = btn.classList.contains('slow') ? 'slow' : 'fast';
+                            const currentSpeed = parseFloat(btn.dataset.speed);
+                            const newSpeed = prompt(`请输入${speedType === 'slow' ? '慢速' : '快速'}倍速（0.1-3.0）`, currentSpeed);
+                            if (newSpeed && !isNaN(newSpeed)) {
+                                const speedNum = parseFloat(newSpeed);
+                                if (speedNum >= 0.1 && speedNum <= 3.0) {
+                                    customSpeed[speedType] = speedNum;
+                                    btn.textContent = `${speedType === 'slow' ? '🐢' : '⚡'} ${speedNum}x`;
+                                    btn.dataset.speed = speedNum;
+                                    showToast(`${speedType === 'slow' ? '慢速' : '快速'}倍速已更新为${speedNum}x`);
+                                } else {
+                                    showToast('请输入0.1-3.0之间的有效数字');
+                                }
+                            } else if (newSpeed) {
+                                showToast('请输入有效的数字');
+                            }
+                        }, 800);
+                    });
+                    btn.addEventListener('mouseup', () => clearTimeout(pressTimer));
+                    btn.addEventListener('mouseleave', () => clearTimeout(pressTimer));
+                    btn.addEventListener('touchstart', () => {
+                        pressTimer = setTimeout(() => {
+                            const speedType = btn.classList.contains('slow') ? 'slow' : 'fast';
+                            const currentSpeed = parseFloat(btn.dataset.speed);
+                            const newSpeed = prompt(`请输入${speedType === 'slow' ? '慢速' : '快速'}倍速（0.1-3.0）`, currentSpeed);
+                            if (newSpeed && !isNaN(newSpeed)) {
+                                const speedNum = parseFloat(newSpeed);
+                                if (speedNum >= 0.1 && speedNum <= 3.0) {
+                                    customSpeed[speedType] = speedNum;
+                                    btn.textContent = `${speedType === 'slow' ? '🐢' : '⚡'} ${speedNum}x`;
+                                    btn.dataset.speed = speedNum;
+                                    showToast(`${speedType === 'slow' ? '慢速' : '快速'}倍速已更新为${speedNum}x`);
+                                } else {
+                                    showToast('请输入0.1-3.0之间的有效数字');
+                                }
+                            } else if (newSpeed) {
+                                showToast('请输入有效的数字');
+                            }
+                        }, 800);
+                    });
+                    btn.addEventListener('touchend', () => clearTimeout(pressTimer));
+                }
+                
+                if (btn.classList.contains('loop-btn')) {
+                    btn.addEventListener('click', () => {
+                        isLoopPlay = !isLoopPlay;
+                        document.querySelectorAll('.loop-btn').forEach(loopBtn => {
+                            loopBtn.classList.toggle('active', isLoopPlay);
+                            loopBtn.textContent = isLoopPlay ? '🔁 循环' : '▶️ 单次';
+                        });
+                        showToast(isLoopPlay ? '已开启循环播放' : '已切换单次播放');
+                    });
+                }
+            });
+        }
+        
+        function copyToClipboard(text) {
+            if (!text) { showToast('无内容可复制'); return; }
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showToast('复制成功！');
+                }).catch(err => {
+                    console.error('复制失败：', err);
+                    fallbackCopyText(text);
+                });
+            } else {
+                fallbackCopyText(text);
+            }
+        }
+        
+        function showToast(message) {
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+        
+        async function translateText(text, fromLang, toLang) {
+            try {
+                const encodedText = encodeURIComponent(text);
+                const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${fromLang}&tl=${toLang}&dt=t&q=${encodedText}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                return data[0][0][0] || '';
+            } catch (error) {
+                console.error('翻译失败：', error);
+                return '';
+            }
+        }
+        
+        async function playAudio(text, langCode, speed = 1, loop = false) {
+            stopCurrentAudio();
+            try {
+                const encodedText = encodeURIComponent(text);
+                const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=${langCode}&total=1&idx=0&client=tw-ob`;
+                currentAudio = new Audio(audioUrl);
+                currentAudio.playbackRate = speed;
+                currentAudio.loop = loop;
+                await currentAudio.play();
+            } catch (error) {
+                showToast('播放失败，请检查网络');
+                console.error('音频播放失败：', error);
+            }
+        }
+        
+        function stopCurrentAudio() {
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio = null;
+            }
+        }
+        
+        function getLangClass(langName) {
+            return langName.includes('英文') ? 'en' : langName.includes('中文') ? 'zh' : 'es';
+        }
+        
+        function getLangCode(langName) {
+            return langName.includes('英文') ? 'en-US' : langName.includes('中文') ? 'zh-CN' : 'es-MX';
+        }
+        
+        floatingInput.addEventListener('input', () => {
+            clipboardTip.style.display = floatingInput.value.trim() ? 'none' : clipboardText ? 'inline-block' : 'none';
+        });
+        
+        init();
+    </script>
+</body>
+</html>
