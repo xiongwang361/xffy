@@ -1,144 +1,38 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
-    <title>三语悬浮翻译机（APP版）</title>
+    <title>三语翻译机</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 微软雅黑, sans-serif; }
-        body { background: #f5f5f5; }
-        .floating-btn {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: #1976d2;
-            color: white;
-            font-size: 24px;
-            border: none;
-            box-shadow: 0 4px 12px rgba(25,118,210,0.4);
-            cursor: pointer;
-            z-index: 9999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-            touch-action: manipulation;
-            user-select: none;
-            overflow: hidden;
-            pointer-events: auto;
-            outline: none;
-            padding: 10px;
-            -webkit-tap-highlight-color: transparent;
-        }
-        .floating-btn:hover {
-            transform: scale(1.1);
-            box-shadow: 0 6px 16px rgba(25,118,210,0.5);
-        }
-        .floating-btn.active {
-            background: #f44336;
-        }
-        .floating-btn.edge-mode {
-            width: 12px;
-            height: 50px;
-            border-radius: 4px;
-            transform: none;
-            box-shadow: 0 2px 8px rgba(25,118,210,0.3);
-            clip-path: none;
-            padding: 0;
-        }
-        .floating-btn.edge-mode.right {
-            right: 0 !important;
-            transform: none !important;
-        }
-        .floating-btn.edge-mode.left {
-            left: 0 !important;
-            transform: none !important;
-        }
-        .floating-btn.edge-mode.top {
-            top: 0 !important;
-            transform: none !important;
-            width: 50px;
-            height: 12px;
-        }
-        .floating-btn.edge-mode.bottom {
-            bottom: 0 !important;
-            transform: none !important;
-            width: 50px;
-            height: 12px;
-        }
-        .floating-btn.edge-mode:hover {
-            width: 16px;
-            height: 56px;
-            box-shadow: 0 4px 12px rgba(25,118,210,0.5);
-        }
-        .floating-btn.edge-mode.top:hover,
-        .floating-btn.edge-mode.bottom:hover {
-            width: 56px;
-            height: 16px;
-        }
+        body { background: #f5f5f5; padding: 15px; }
         .floating-modal {
-            position: fixed;
-            bottom: 100px;
-            right: 15px;
-            left: 15px;
-            width: auto;
-            max-width: 400px;
+            position: relative;
+            width: 100%;
+            max-width: 500px;
             background: white;
             border-radius: 12px;
             box-shadow: 0 6px 20px rgba(0,0,0,0.15);
             z-index: 9998;
             padding: 20px;
-            padding-bottom: 70px;
-            display: none;
+            padding-bottom: 70px; /* 预留底部按钮空间，避免遮挡 */
+            display: flex;
             flex-direction: column;
             gap: 15px;
             animation: popUp 0.3s ease-out;
-            max-height: 80vh;
-            overflow-y: auto;
+            max-height: 90vh;
+            resize: both;
+            overflow: auto;
+            min-width: 300px;
+            min-height: 400px;
             margin: 0 auto;
         }
         @keyframes popUp {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
-        }
-        .floating-modal.active {
-            display: flex;
-        }
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            background: white;
-            padding-bottom: 10px;
-            z-index: 10;
-        }
-        .modal-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: #333;
-        }
-        .close-btn {
-            display: flex;
-            background: transparent;
-            border: none;
-            font-size: 20px;
-            color: #666;
-            cursor: pointer;
-            width: 30px;
-            height: 30px;
-            align-items: center;
-            justify-content: center;
-            -webkit-tap-highlight-color: transparent;
-        }
-        .close-btn:hover {
-            color: #f44336;
         }
         .settings-row {
             display: flex;
@@ -363,28 +257,27 @@
             background: #e3f2fd;
             color: #1976d2;
         }
+        /* 核心修改：3个悬浮按钮样式调整 */
         .bottom-btn-group {
             display: flex;
-            gap: 10px;
-            padding: 10px 0;
-            background: white;
-            border-radius: 0 0 12px 12px;
-            position: fixed;
-            bottom: 100px;
-            left: 15px;
-            right: 15px;
-            width: auto;
-            max-width: 400px;
-            z-index: 9999;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
-            padding-left: 20px;
-            padding-right: 20px;
-            margin: 0 auto;
+            gap: 10px; /* 仅保留按钮之间的间距 */
+            position: sticky; /* 保持悬浮置底 */
+            bottom: 0; /* 完全贴合窗口底部 */
+            left: 0;
+            right: 0;
+            z-index: 10;
+            /* 移除所有背景、阴影、内边距，取消白色画布 */
+            background: transparent;
+            box-shadow: none;
+            padding: 0;
+            margin: 0;
         }
-        .back-to-bottom-btn {
+        /* 简化按钮容器，移除多余样式 */
+        .back-to-bottom-btn, .back-to-top-btn {
             flex: 1;
         }
-        .back-to-bottom-btn button {
+        /* 按钮样式保留，仅保证正常展示 */
+        .back-to-bottom-btn button, .back-to-top-btn button {
             width: 100%;
             background: #f5f5f5;
             border: 1px solid #ddd;
@@ -396,27 +289,7 @@
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
             -webkit-tap-highlight-color: transparent;
         }
-        .back-to-bottom-btn button:hover {
-            background: #eee;
-            transform: scale(1.03);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-        .back-to-top-btn {
-            flex: 1;
-        }
-        .back-to-top-btn button {
-            width: 100%;
-            background: #f5f5f5;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            padding: 8px 16px;
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-            -webkit-tap-highlight-color: transparent;
-        }
-        .back-to-top-btn button:hover {
+        .back-to-bottom-btn button:hover, .back-to-top-btn button:hover {
             background: #eee;
             transform: scale(1.03);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -443,12 +316,6 @@
             transform: scale(1.03);
             box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
         }
-        .api-tip {
-            font-size: 12px;
-            color: #ff5722;
-            text-align: center;
-            margin-top: 5px;
-        }
         .toast {
             position: fixed;
             top: 50%;
@@ -466,32 +333,11 @@
         .toast.show {
             opacity: 1;
         }
-        .lang-flag {
-            margin-right: 6px;
-        }
-        .clipboard-tip {
-            position: absolute;
-            top: -25px;
-            left: 0;
-            font-size: 12px;
-            color: #4caf50;
-            background: #f1f8e9;
-            padding: 3px 8px;
-            border-radius: 4px;
-            display: none;
-        }
     </style>
 </head>
 <body>
-    <button class="floating-btn" id="floatingBtn">🌐</button>
+    <!-- 合并后的主窗口 -->
     <div class="floating-modal" id="floatingModal">
-        <div class="modal-header">
-            <div class="modal-title">三语悬浮翻译机</div>
-            <div style="display: flex; gap: 10px; align-items: center;">
-                <button class="setting-btn" id="floatSettingBtn">⚙️ 悬浮球设置</button>
-                <button class="close-btn" id="closeBtn">×</button>
-            </div>
-        </div>
         <div class="settings-row">
             <div class="translate-dir">
                 <button class="dir-btn active" data-dir="auto">自动识别→三语</button>
@@ -509,7 +355,6 @@
             </div>
         </div>
         <div class="input-container">
-            <div class="clipboard-tip" id="clipboardTip">已识别剪贴板内容，点击翻译即可使用</div>
             <textarea id="floatingInput" placeholder="自动识别语言，输入/粘贴内容即可翻译"></textarea>
         </div>
         <div class="btn-group">
@@ -519,56 +364,39 @@
         <div class="result-area" id="resultArea">
             <div class="result-text" style="text-align: center; color: #999;">翻译结果将显示在这里</div>
         </div>
-    </div>
-    <div class="bottom-btn-group" id="bottomBtnGroup" style="display: none;">
-        <div class="back-to-bottom-btn">
-            <button id="backToBottomBtn">回到最底部</button>
+        <!-- 无背景的悬浮按钮组 -->
+        <div class="bottom-btn-group" id="bottomBtnGroup">
+            <div class="back-to-bottom-btn">
+                <button id="backToBottomBtn">回到最底部</button>
+            </div>
+            <div class="back-to-top-btn">
+                <button id="backToTopBtn">回到输入框</button>
+            </div>
+            <button class="copy-all-btn" id="copyAllBtn" style="display: none;">
+                📋 复制三语全文
+            </button>
         </div>
-        <div class="back-to-top-btn">
-            <button id="backToTopBtn">回到输入框</button>
-        </div>
-        <button class="copy-all-btn" id="copyAllBtn">
-            📋 复制三语全文
-        </button>
     </div>
     <div class="toast" id="toast">操作成功！</div>
     <script>
+        // 移除悬浮球相关配置，保留核心设置
         const defaultSettings = {
             translateDir: 'auto',
             showFlagPrefix: true,
-            floatBtnPos: { bottom: 30, right: 30 },
-            isEdgeMode: false,
-            edgePosition: 'right',
-            lastMode: 'ball',
-            edgePos记忆: {
-                right: { bottom: '30px', right: '0' },
-                left: { top: '30px', left: '0' },
-                top: { top: '0', left: '30px' },
-                bottom: { bottom: '0', left: '30px' }
-            },
             customSpeed: { slow: 0.7, fast: 1.5 },
             isLoopPlay: false
         };
         let settings = JSON.parse(localStorage.getItem('translateSettings')) || defaultSettings;
         let translateDir = settings.translateDir;
         let showFlagPrefix = settings.showFlagPrefix;
-        let floatBtnPos = settings.floatBtnPos;
-        let isEdgeMode = settings.isEdgeMode;
-        let edgePosition = settings.edgePosition;
-        let lastMode = settings.lastMode;
-        let edgePos记忆 = settings.edgePos记忆;
         let customSpeed = settings.customSpeed;
         let isLoopPlay = settings.isLoopPlay;
         let currentAudio = null;
         let translateResult = { lang1: '', lang2: '', lang3: '', text1: '', text2: '', text3: '', flag1: '', flag2: '', flag3: '' };
-        let clipboardText = '';
-        let startX, startY, startLeft, startTop;
         
+        // DOM引用
         const backToBottomBtn = document.getElementById('backToBottomBtn');
         const bottomBtnGroup = document.getElementById('bottomBtnGroup');
-        const floatSettingBtn = document.getElementById('floatSettingBtn');
-        const closeBtn = document.getElementById('closeBtn');
-        const floatingBtn = document.getElementById('floatingBtn');
         const floatingModal = document.getElementById('floatingModal');
         const clearInputBtn = document.getElementById('clearInputBtn');
         const backToTopBtn = document.getElementById('backToTopBtn');
@@ -580,7 +408,6 @@
         const translateBtn = document.getElementById('translateBtn');
         const resultArea = document.getElementById('resultArea');
         const toast = document.getElementById('toast');
-        const clipboardTip = document.getElementById('clipboardTip');
         
         const langFlagMap = {
             en: '🇬🇧',
@@ -589,16 +416,10 @@
         };
         
         function init() {
-            setFloatBtnMode();
-            setFloatBtnPosition();
             flagToggle.checked = showFlagPrefix;
             dirBtns.forEach(btn => btn.dataset.dir === translateDir && btn.classList.add('active'));
             updateInputPlaceholder();
-            readClipboard();
             bindClickToggleModal();
-            bindFloatSettingBtn();
-            bindCloseBtn();
-            bindFloatBtnDrag();
             bindCopyAllBtn();
             bindBackToBottomBtn();
             initSpeedButtons();
@@ -635,130 +456,6 @@
             });
         }
         
-        function bindCloseBtn() {
-            closeBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                floatingModal.classList.remove('active');
-                floatingBtn.classList.remove('active');
-                bottomBtnGroup.style.display = 'none';
-                stopCurrentAudio();
-                clipboardTip.style.display = 'none';
-                setFloatBtnMode();
-                setFloatBtnPosition();
-            });
-        }
-        
-        function bindFloatSettingBtn() {
-            floatSettingBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                isEdgeMode = !isEdgeMode;
-                lastMode = isEdgeMode ? 'edge' : 'ball';
-                setFloatBtnMode();
-                setFloatBtnPosition();
-                settings.isEdgeMode = isEdgeMode;
-                settings.lastMode = lastMode;
-                localStorage.setItem('translateSettings', JSON.stringify(settings));
-                showToast(`已切换为${isEdgeMode ? '长条' : '圆球'}模式，可自由拖拽`);
-            });
-        }
-        
-        function setFloatBtnMode() {
-            floatingBtn.classList.remove('edge-mode', 'right', 'left', 'top', 'bottom');
-            if (isEdgeMode) {
-                floatingBtn.classList.add('edge-mode', edgePosition);
-                floatingBtn.innerHTML = '';
-            } else {
-                floatingBtn.innerHTML = '🌐';
-            }
-        }
-        
-        function setFloatBtnPosition() {
-            if (isEdgeMode) {
-                const pos = edgePos记忆[edgePosition];
-                floatingBtn.style = '';
-                for (const key in pos) {
-                    floatingBtn.style[key] = pos[key];
-                }
-                floatingBtn.classList.add('edge-mode', edgePosition);
-            } else {
-                const btnWidth = floatingBtn.offsetWidth;
-                const btnHeight = floatingBtn.offsetHeight;
-                floatBtnPos.right = Math.max(0, Math.min(floatBtnPos.right, window.innerWidth - btnWidth));
-                floatBtnPos.bottom = Math.max(0, Math.min(floatBtnPos.bottom, window.innerHeight - btnHeight));
-                floatingBtn.style.bottom = `${floatBtnPos.bottom}px`;
-                floatingBtn.style.right = `${floatBtnPos.right}px`;
-                floatingBtn.style.top = 'auto';
-                floatingBtn.style.left = 'auto';
-            }
-        }
-        
-        function bindFloatBtnDrag() {
-            function handleStart(e) {
-                e.preventDefault();
-                const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-                const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-                const rect = floatingBtn.getBoundingClientRect();
-                startX = clientX;
-                startY = clientY;
-                startLeft = rect.left;
-                startTop = rect.top;
-                floatingBtn.style.cursor = 'grabbing';
-                floatingBtn.style.transition = 'none';
-            }
-            
-            function handleMove(e) {
-                if (startX === undefined || startY === undefined) return;
-                const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-                const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-                const offsetX = clientX - startX;
-                const offsetY = clientY - startY;
-                let newLeft = startLeft + offsetX;
-                let newTop = startTop + offsetY;
-                const btnWidth = floatingBtn.offsetWidth;
-                const btnHeight = floatingBtn.offsetHeight;
-                
-                newLeft = Math.max(0, Math.min(newLeft, window.innerWidth - btnWidth));
-                newTop = Math.max(0, Math.min(newTop, window.innerHeight - btnHeight));
-                
-                floatingBtn.style.left = `${newLeft}px`;
-                floatingBtn.style.top = `${newTop}px`;
-                floatingBtn.style.bottom = 'auto';
-                floatingBtn.style.right = 'auto';
-                
-                if (isEdgeMode) {
-                    edgePos记忆[edgePosition] = {
-                        left: `${newLeft}px`,
-                        top: `${newTop}px`
-                    };
-                } else {
-                    floatBtnPos = {
-                        bottom: window.innerHeight - (newTop + btnHeight),
-                        right: window.innerWidth - (newLeft + btnWidth)
-                    };
-                }
-            }
-            
-            function handleEnd() {
-                if (startX === undefined || startY === undefined) return;
-                floatingBtn.style.cursor = 'pointer';
-                floatingBtn.style.transition = 'all 0.3s ease';
-                settings.floatBtnPos = floatBtnPos;
-                settings.edgePos记忆 = edgePos记忆;
-                localStorage.setItem('translateSettings', JSON.stringify(settings));
-                startX = undefined;
-                startY = undefined;
-                startLeft = undefined;
-                startTop = undefined;
-            }
-            
-            floatingBtn.addEventListener('mousedown', handleStart);
-            document.addEventListener('mousemove', handleMove);
-            document.addEventListener('mouseup', handleEnd);
-            floatingBtn.addEventListener('touchstart', handleStart, { passive: false });
-            document.addEventListener('touchmove', handleMove, { passive: false });
-            document.addEventListener('touchend', handleEnd);
-        }
-        
         function updateInputPlaceholder() {
             const placeholderMap = {
                 'auto': '自动识别语言，输入/粘贴内容即可翻译',
@@ -767,17 +464,6 @@
                 'es2zh': '请输入西班牙语内容...'
             };
             floatingInput.placeholder = placeholderMap[translateDir];
-        }
-        
-        async function readClipboard() {
-            try {
-                if (navigator.clipboard) {
-                    const text = await navigator.clipboard.readText();
-                    if (text.trim() && text.length < 500) clipboardText = text.trim();
-                }
-            } catch (error) {
-                console.error('读取剪贴板失败：', error);
-            }
         }
         
         function detectLanguage(text) {
@@ -792,40 +478,6 @@
             floatingModal.addEventListener('click', (e) => {
                 e.stopPropagation();
             });
-            
-            floatingBtn.addEventListener('click', toggleModal);
-            floatingBtn.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                toggleModal();
-            });
-            
-            function toggleModal() {
-                const isModalActive = floatingModal.classList.contains('active');
-                if (isModalActive) {
-                    floatingModal.classList.remove('active');
-                    floatingBtn.classList.remove('active');
-                    bottomBtnGroup.style.display = 'none';
-                    stopCurrentAudio();
-                    clipboardTip.style.display = 'none';
-                    setFloatBtnMode();
-                    setFloatBtnPosition();
-                } else {
-                    floatingModal.classList.add('active');
-                    floatingBtn.classList.add('active');
-                    bottomBtnGroup.style.display = 'flex';
-                    copyAllBtn.style.display = 'none';
-                    floatingBtn.classList.remove('edge-mode', 'right', 'left', 'top', 'bottom');
-                    floatingBtn.innerHTML = '🌐';
-                    floatingBtn.style.bottom = '30px';
-                    floatingBtn.style.right = '30px';
-                    floatingBtn.style.top = 'auto';
-                    floatingBtn.style.left = 'auto';
-                    floatingInput.focus();
-                    if (clipboardText && !floatingInput.value.trim()) {
-                        clipboardTip.style.display = 'inline-block';
-                    }
-                }
-            }
         }
         
         function bindCopyAllBtn() {
@@ -867,7 +519,6 @@
         clearInputBtn.addEventListener('click', () => {
             floatingInput.value = '';
             floatingInput.focus();
-            clipboardTip.style.display = 'none';
         });
         
         backToTopBtn.addEventListener('click', () => {
@@ -893,11 +544,6 @@
             settings = {
                 translateDir, 
                 showFlagPrefix, 
-                floatBtnPos,
-                isEdgeMode, 
-                edgePosition, 
-                lastMode,
-                edgePos记忆: edgePos记忆,
                 customSpeed: customSpeed,
                 isLoopPlay: isLoopPlay
             };
@@ -907,7 +553,7 @@
         
         translateBtn.addEventListener('click', async (e) => {
             e.stopPropagation();
-            let inputText = floatingInput.value.trim() || clipboardText;
+            let inputText = floatingInput.value.trim();
             if (!inputText) {
                 resultArea.innerHTML = '<div class="result-text" style="text-align: center; color: #999;">请输入需要翻译的内容</div>';
                 copyAllBtn.style.display = 'none';
@@ -995,11 +641,15 @@
                 if (btn.classList.contains('play-btn') || btn.classList.contains('speed-btn')) {
                     btn.addEventListener('click', async (e) => {
                         const text = e.target.dataset.text;
-                        const lang = e.target.dataset.lang;
+                        const langCode = e.target.dataset.lang;
                         const speed = parseFloat(e.target.dataset.speed);
-                        if (text && text !== '翻译失败') {
-                            await playAudio(text, lang, speed, isLoopPlay);
+                        
+                        if (!text || text === '翻译失败' || !langCode || isNaN(speed)) {
+                            showToast('无法播放，参数无效');
+                            return;
                         }
+                        
+                        await playAudio(text, langCode, speed, isLoopPlay);
                     });
                 }
                 
@@ -1098,22 +748,25 @@
         
         async function playAudio(text, langCode, speed = 1, loop = false) {
             stopCurrentAudio();
+            
             try {
                 const encodedText = encodeURIComponent(text);
-                const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=${langCode}&total=1&idx=0&client=tw-ob`;
+                const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=${langCode}&total=1&idx=0&client=tw-ob&tl=${langCode}`;
+                
                 currentAudio = new Audio(audioUrl);
                 currentAudio.playbackRate = speed;
                 currentAudio.loop = loop;
                 await currentAudio.play();
             } catch (error) {
-                showToast('播放失败，请检查网络');
-                console.error('音频播放失败：', error);
+                showToast('播放失败，请检查网络或接口可用性');
+                console.error('音频播放失败详情：', error);
             }
         }
         
         function stopCurrentAudio() {
             if (currentAudio) {
                 currentAudio.pause();
+                currentAudio.currentTime = 0;
                 currentAudio = null;
             }
         }
@@ -1126,10 +779,7 @@
             return langName.includes('英文') ? 'en-US' : langName.includes('中文') ? 'zh-CN' : 'es-MX';
         }
         
-        floatingInput.addEventListener('input', () => {
-            clipboardTip.style.display = floatingInput.value.trim() ? 'none' : clipboardText ? 'inline-block' : 'none';
-        });
-        
+        // 初始化页面
         init();
     </script>
 </body>
